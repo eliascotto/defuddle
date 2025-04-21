@@ -30,7 +30,7 @@
 	},
 	"scripts": {
 		"clean": "rm -rf dist",
-		"prepare": "npm run clean && npm run build",
+		"prepare": "npm run build",
 		"build:types": "tsc --project tsconfig.declarations.json",
 		"build:js": "webpack",
 		"build:node": "tsc --project tsconfig.node.json",
