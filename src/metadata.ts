@@ -41,14 +41,14 @@ export class MetadataExtractor {
 		}
 
 		return {
-			title: this.getTitle(doc, schemaOrgData, metaTags),
+			title: this.getTitle(doc, schemaOrgData, metaTags, domain),
 			description: this.getDescription(doc, schemaOrgData, metaTags),
 			domain,
 			favicon: this.getFavicon(doc, url, metaTags),
 			image: this.getImage(doc, schemaOrgData, metaTags),
 			published: this.getPublished(doc, schemaOrgData, metaTags),
 			author: this.getAuthor(doc, schemaOrgData, metaTags),
-			site: this.getSite(doc, schemaOrgData, metaTags),
+			site: this.getSite(doc, schemaOrgData, metaTags, domain),
 			schemaOrgData,
 			wordCount: 0,
 			parseTime: 0
@@ -133,8 +133,9 @@ export class MetadataExtractor {
 		return '';
 	}
 
-	private static getSite(doc: Document, schemaOrgData: any, metaTags: MetaTagItem[]): string {
-		return (
+	private static getSite(doc: Document, schemaOrgData: any, metaTags: MetaTagItem[], domain: string = ''): string {
+		// Try standard meta tags and schema properties first
+		const siteFromMeta = (
 			this.getSchemaProperty(schemaOrgData, 'publisher.name') ||
 			this.getMetaContent(metaTags, "property", "og:site_name") ||
 			this.getSchemaProperty(schemaOrgData, 'WebSite.name') ||
@@ -146,9 +147,38 @@ export class MetadataExtractor {
 			this.getAuthor(doc, schemaOrgData, metaTags) ||
 			''
 		);
+
+		if (siteFromMeta) {
+			return siteFromMeta;
+		}
+
+		// Domain-based fallback: extract site name from domain
+		if (domain) {
+			// Extract site name from domain (e.g., "overreacted" from "overreacted.io")
+			const domainParts = domain.split('.');
+			if (domainParts.length >= 2) {
+				// Get the main domain name (second-to-last part, or last if only one part)
+				const mainDomain = domainParts[domainParts.length - 2] || domainParts[domainParts.length - 1];
+				if (mainDomain && mainDomain !== 'www') {
+					return mainDomain;
+				}
+			}
+		}
+
+		// Try to extract from banner/header links
+		const headerLinks = doc.querySelectorAll('header a, nav a, [role="banner"] a, .site-title a, .logo a');
+		for (const link of Array.from(headerLinks)) {
+			const linkText = link.textContent?.trim();
+			if (linkText && linkText.length > 0 && linkText.length < 50) {
+				// Use the first reasonable link text as site name
+				return linkText;
+			}
+		}
+
+		return '';
 	}
 
-	private static getTitle(doc: Document, schemaOrgData: any, metaTags: MetaTagItem[]): string {
+	private static getTitle(doc: Document, schemaOrgData: any, metaTags: MetaTagItem[], domain: string = ''): string {
 		const rawTitle = (
 			this.getMetaContent(metaTags, "property", "og:title") ||
 			this.getMetaContent(metaTags, "name", "twitter:title") ||
@@ -159,24 +189,98 @@ export class MetadataExtractor {
 			''
 		);
 
-		return this.cleanTitle(rawTitle, this.getSite(doc, schemaOrgData, metaTags));
+		return this.cleanTitle(rawTitle, this.getSite(doc, schemaOrgData, metaTags, domain), domain);
 	}
 
-	private static cleanTitle(title: string, siteName: string): string {
-		if (!title || !siteName) return title;
+	private static cleanTitle(title: string, siteName: string, domain: string = ''): string {
+		if (!title) return title;
 
-		// Remove site name if it exists
-		const siteNameEscaped = siteName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-		const patterns = [
-			`\\s*[\\|\\-–—]\\s*${siteNameEscaped}\\s*$`, // Title | Site Name
-			`^\\s*${siteNameEscaped}\\s*[\\|\\-–—]\\s*`, // Site Name | Title
+		// Normalize function for fuzzy matching
+		const normalize = (text: string): string => {
+			return text
+				.toLowerCase()
+				.replace(/[^\w\s]/g, '') // Remove punctuation
+				.replace(/\s+/g, ' ') // Normalize whitespace
+				.trim();
+		};
+
+		// Try to extract site name from title if it follows common patterns
+		// Pattern: "Title — SiteName" or "Title | SiteName" or "Title - SiteName"
+		const titlePatterns = [
+			/^(.+?)\s*[–—]\s*(.+)$/, // Title — SiteName
+			/^(.+?)\s*\|\s*(.+)$/, // Title | SiteName
+			/^(.+?)\s*-\s*(.+)$/, // Title - SiteName
 		];
-		
-		for (const pattern of patterns) {
-			const regex = new RegExp(pattern, 'i');
-			if (regex.test(title)) {
-				title = title.replace(regex, '');
-				break;
+
+		let extractedSiteName = siteName;
+		for (const pattern of titlePatterns) {
+			const match = title.match(pattern);
+			if (match) {
+				const [, titlePart, sitePart] = match;
+				// If we don't have a site name yet, or if the extracted one matches better
+				if (!siteName || normalize(sitePart) === normalize(siteName)) {
+					extractedSiteName = sitePart.trim();
+					title = titlePart.trim();
+					break;
+				}
+			}
+		}
+
+		// If we still have a site name, try to remove it with various patterns
+		if (extractedSiteName) {
+			const siteNameEscaped = extractedSiteName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+			const patterns = [
+				`\\s*[\\|\\-–—]\\s*${siteNameEscaped}\\s*$`, // Title | Site Name
+				`^\\s*${siteNameEscaped}\\s*[\\|\\-–—]\\s*`, // Site Name | Title
+			];
+			
+			for (const pattern of patterns) {
+				const regex = new RegExp(pattern, 'i');
+				if (regex.test(title)) {
+					title = title.replace(regex, '');
+					break;
+				}
+			}
+
+			// Fuzzy matching: if normalized site name is contained in normalized title
+			const normalizedTitle = normalize(title);
+			const normalizedSiteName = normalize(extractedSiteName);
+			
+			if (normalizedSiteName && normalizedTitle.includes(normalizedSiteName)) {
+				// Try to remove site name with separators
+				const fuzzyPatterns = [
+					new RegExp(`\\s*[\\|\\-–—]\\s*${normalizedSiteName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i'),
+					new RegExp(`^\\s*${normalizedSiteName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[\\|\\-–—]\\s*`, 'i'),
+				];
+				
+				for (const pattern of fuzzyPatterns) {
+					if (pattern.test(title)) {
+						title = title.replace(pattern, '');
+						break;
+					}
+				}
+			}
+		}
+
+		// Fallback: try domain-based removal if domain is available
+		if (domain && !extractedSiteName) {
+			const domainParts = domain.split('.');
+			if (domainParts.length >= 2) {
+				const mainDomain = domainParts[domainParts.length - 2] || domainParts[domainParts.length - 1];
+				if (mainDomain && mainDomain !== 'www') {
+					const domainEscaped = mainDomain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+					const domainPatterns = [
+						new RegExp(`\\s*[\\|\\-–—]\\s*${domainEscaped}\\s*$`, 'i'),
+						new RegExp(`^\\s*${domainEscaped}\\s*[\\|\\-–—]\\s*`, 'i'),
+					];
+					
+					for (const pattern of domainPatterns) {
+						if (pattern.test(title)) {
+							title = title.replace(pattern, '');
+							break;
+						}
+					}
+				}
 			}
 		}
 

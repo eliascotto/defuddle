@@ -283,14 +283,49 @@ function standardizeHeadings(element: Element, title: string, doc: Document): vo
 	const normalizeText = (text: string): string => {
 		return text
 			.replace(/\u00A0/g, ' ') // Convert non-breaking spaces to regular spaces
+			.replace(/[^\w\s]/g, '') // Remove punctuation for more aggressive matching
 			.replace(/\s+/g, ' ') // Normalize all whitespace to single spaces
 			.trim()
 			.toLowerCase();
 	};
 
-	const h1s = element.getElementsByTagName('h1');
+	// Check if heading text matches title (exact or partial)
+	const matchesTitle = (headingText: string, titleText: string): boolean => {
+		const normalizedHeading = normalizeText(headingText);
+		const normalizedTitle = normalizeText(titleText);
+		
+		if (!normalizedHeading || !normalizedTitle) return false;
+		
+		// Exact match
+		if (normalizedHeading === normalizedTitle) return true;
+		
+		// Partial match: if title starts with heading text
+		if (normalizedTitle.startsWith(normalizedHeading)) return true;
+		
+		// Partial match: if heading text is contained in title
+		if (normalizedTitle.includes(normalizedHeading) && normalizedHeading.length >= 3) return true;
+		
+		// Partial match: if heading text starts with title (reversed)
+		if (normalizedHeading.startsWith(normalizedTitle) && normalizedTitle.length >= 3) return true;
+		
+		return false;
+	};
 
-	Array.from(h1s).forEach(h1 => {
+	// Get all H1 elements
+	const h1s = Array.from(element.getElementsByTagName('h1'));
+
+	// Check and remove first H1 if it matches title
+	if (h1s.length > 0) {
+		const firstH1 = h1s[0];
+		const firstH1Text = firstH1.textContent || '';
+		if (matchesTitle(firstH1Text, title)) {
+			firstH1.remove();
+		}
+	}
+
+	// Convert remaining H1s to H2s (get fresh list after potential removal)
+	const remainingH1s = Array.from(element.getElementsByTagName('h1'));
+	remainingH1s.forEach(h1 => {
 		const h2 = doc.createElement('h2');
 		h2.innerHTML = h1.innerHTML;
 		// Copy allowed attributes
@@ -302,14 +337,14 @@ function standardizeHeadings(element: Element, title: string, doc: Document): vo
 		h1.parentNode?.replaceChild(h2, h1);
 	});
 
-	// Remove first H2 if it matches title
-	const h2s = element.getElementsByTagName('h2');
-	if (h2s.length > 0) {
-		const firstH2 = h2s[0];
-		const firstH2Text = normalizeText(firstH2.textContent || '');
-		const normalizedTitle = normalizeText(title);
-		if (normalizedTitle && normalizedTitle === firstH2Text) {
-			firstH2.remove();
+	// Remove first H2 that matches title (with partial matching)
+	// This handles both converted H1s and existing H2s
+	const h2s = Array.from(element.getElementsByTagName('h2'));
+	for (const h2 of h2s) {
+		const h2Text = h2.textContent || '';
+		if (matchesTitle(h2Text, title)) {
+			h2.remove();
+			break; // Only remove the first matching H2
 		}
 	}
 }
