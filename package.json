@@ -7,9 +7,15 @@
 	"types": "dist/index.d.ts",
 	"typesVersions": {
 		"*": {
-			"*": ["dist/index.d.ts"],
-			"full": ["dist/index.full.d.ts"],
-			"node": ["dist/node.d.ts"]
+			"*": [
+				"dist/index.d.ts"
+			],
+			"full": [
+				"dist/index.full.d.ts"
+			],
+			"node": [
+				"dist/node.d.ts"
+			]
 		}
 	},
 	"exports": {
@@ -75,7 +81,7 @@
 		"@types/node": "^20.19.0",
 		"@types/turndown": "^5.0.5",
 		"concurrently": "^8.2.2",
-		"jsdom": "^24.0.0",
+		"jsdom": "^24.1.3",
 		"terser-webpack-plugin": "^5.3.14",
 		"ts-loader": "^9.5.1",
 		"typescript": "^5.3.3",
