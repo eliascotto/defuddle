@@ -1,6 +1,17 @@
 import { BaseExtractor } from './_base';
 import { ExtractorResult } from '../types/extractors';
 
+/**
+ * Format a date as M/D/YYYY (e.g., 5/25/2025)
+ * Uses UTC to avoid timezone conversion issues
+ */
+function formatDate(date: Date): string {
+	const month = date.getUTCMonth() + 1; // getUTCMonth() returns 0-11
+	const day = date.getUTCDate();
+	const year = date.getUTCFullYear();
+	return `${month}/${day}/${year}`;
+}
+
 export class GitHubExtractor extends BaseExtractor {
 	canExtract(): boolean {
 		const githubIndicators = [
@@ -55,7 +66,7 @@ export class GitHubExtractor extends BaseExtractor {
 				content += `<div class="issue-author"><strong>${issueAuthor}</strong>`;
 				if (issueTimestamp) {
 					const date = new Date(issueTimestamp);
-					content += ` opened this issue on ${date.toLocaleDateString()}`;
+					content += ` opened this issue on ${formatDate(date)}`;
 				}
 				content += `</div>\n\n`;
 				content += `<div class="issue-body">${bodyContent}</div>\n\n`;
@@ -93,7 +104,7 @@ export class GitHubExtractor extends BaseExtractor {
 					content += `<div class="comment-header"><strong>${author}</strong>`;
 					if (timestamp) {
 						const date = new Date(timestamp);
-						content += ` commented on ${date.toLocaleDateString()}`;
+						content += ` commented on ${formatDate(date)}`;
 					}
 					content += `</div>\n`;
 					content += `<div class="comment-body">${bodyContent}</div>\n`;
