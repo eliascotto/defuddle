@@ -46,35 +46,19 @@ export function createDocumentWithMetadata(metadata: {
 	ogImage?: string;
 	schemaOrg?: any;
 }, bodyContent: string = ''): Document {
-	let headContent = '';
-	
-	if (metadata.title) {
-		headContent += `<title>${metadata.title}</title>`;
-	}
-	if (metadata.description) {
-		headContent += `<meta name="description" content="${metadata.description}">`;
-	}
-	if (metadata.author) {
-		headContent += `<meta name="author" content="${metadata.author}">`;
-	}
-	if (metadata.image) {
-		headContent += `<meta name="image" content="${metadata.image}">`;
-	}
-	if (metadata.published) {
-		headContent += `<meta name="published" content="${metadata.published}">`;
-	}
-	if (metadata.ogTitle) {
-		headContent += `<meta property="og:title" content="${metadata.ogTitle}">`;
-	}
-	if (metadata.ogDescription) {
-		headContent += `<meta property="og:description" content="${metadata.ogDescription}">`;
-	}
-	if (metadata.ogImage) {
-		headContent += `<meta property="og:image" content="${metadata.ogImage}">`;
-	}
-	if (metadata.schemaOrg) {
-		headContent += `<script type="application/ld+json">${JSON.stringify(metadata.schemaOrg)}</script>`;
-	}
+	const headContent = [
+		metadata.title && `<title>${metadata.title}</title>`,
+		metadata.description && `<meta name="description" content="${metadata.description}">`,
+		metadata.author && `<meta name="author" content="${metadata.author}">`,
+		metadata.image && `<meta name="image" content="${metadata.image}">`,
+		metadata.published && `<meta name="published" content="${metadata.published}">`,
+		metadata.ogTitle && `<meta property="og:title" content="${metadata.ogTitle}">`,
+		metadata.ogDescription && `<meta property="og:description" content="${metadata.ogDescription}">`,
+		metadata.ogImage && `<meta property="og:image" content="${metadata.ogImage}">`,
+		metadata.schemaOrg && `<script type="application/ld+json">${JSON.stringify(metadata.schemaOrg)}</script>`,
+	]
+		.filter(Boolean)
+		.join('');
 
 	const html = `<!DOCTYPE html>
 <html>
@@ -122,9 +106,5 @@ export function expectNoSelector(html: string, selector: string): void {
 export function expectSelector(html: string, selector: string, count?: number): void {
 	const dom = new JSDOM(html);
 	const elements = dom.window.document.querySelectorAll(selector);
-	if (count !== undefined) {
-		expect(elements.length).toBe(count);
-	} else {
-		expect(elements.length).toBeGreaterThan(0);
-	}
+	expect(elements.length).toBe(count ?? 1);
 }

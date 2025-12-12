@@ -15,19 +15,23 @@ export async function Defuddle(
 	url?: string,
 	options?: DefuddleOptions
 ): Promise<DefuddleResponse> {
-	
 	let dom: JSDOM;
 	
 	if (typeof htmlOrDom === 'string') {
+		const virtualConsole = new VirtualConsole();
+		// jsdom@27+: VirtualConsole#sendTo was renamed to #forwardTo
+		// (some @types/jsdom versions lag behind, so use a tiny runtime shim)
+		((virtualConsole as any).forwardTo ?? (virtualConsole as any).sendTo)?.call(virtualConsole, console, { omitJSDOMErrors: true });
+
 		dom = new JSDOM(htmlOrDom, {
 			url,
-//			runScripts: 'outside-only',
-			resources: 'usable',
+			// runScripts: 'outside-only',
 			pretendToBeVisual: true,
-			includeNodeLocations: true,
+			// includeNodeLocations can trigger parse5/jsdom edge-cases on malformed HTML; leave disabled unless needed
+			// includeNodeLocations: true,
 			storageQuota: 10000000,
 			// Add virtual console to suppress warnings
-			virtualConsole: new VirtualConsole().sendTo(console, { omitJSDOMErrors: true })
+			virtualConsole
 		});
 	} else {
 		dom = htmlOrDom;
@@ -48,6 +52,11 @@ export async function Defuddle(
 		result.content = createMarkdownContent(result.content, pageUrl);
 	} else if (options?.separateMarkdown) {
 		result.contentMarkdown = createMarkdownContent(result.content, pageUrl);
+	}
+
+	// Clean up JSDOM instance if we created it (not if it was passed in)
+	if (typeof htmlOrDom === 'string') {
+		dom.window.close();
 	}
 
 	return result;

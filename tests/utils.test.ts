@@ -7,31 +7,25 @@ describe('Utils', () => {
 		test('should return true for element nodes', () => {
 			const dom = new JSDOM('<div>test</div>');
 			const element = dom.window.document.querySelector('div');
-			expect(element).toBeTruthy();
-			if (element) {
-				expect(isElement(element)).toBe(true);
-			}
+			expect(element).not.toBeNull();
+			expect(isElement(element)).toBe(true);
 		});
 
 		test('should return false for text nodes', () => {
 			const dom = new JSDOM('<div>test</div>');
 			const element = dom.window.document.querySelector('div');
-			expect(element).toBeTruthy();
-			if (element && element.firstChild) {
-				expect(isElement(element.firstChild)).toBe(false);
-			}
+			expect(element).not.toBeNull();
+			expect(element!.firstChild).not.toBeNull();
+			expect(isElement(element!.firstChild!)).toBe(false);
 		});
 
 		test('should return false for comment nodes', () => {
 			const dom = new JSDOM('<div><!-- comment --></div>');
 			const element = dom.window.document.querySelector('div');
-			expect(element).toBeTruthy();
-			if (element) {
-				const comment = Array.from(element.childNodes).find(node => node.nodeType === 8);
-				if (comment) {
-					expect(isElement(comment)).toBe(false);
-				}
-			}
+			expect(element).not.toBeNull();
+			const comment = Array.from(element!.childNodes).find(node => node.nodeType === 8);
+			expect(comment).toBeDefined();
+			expect(isElement(comment!)).toBe(false);
 		});
 	});
 
@@ -39,19 +33,16 @@ describe('Utils', () => {
 		test('should return true for text nodes', () => {
 			const dom = new JSDOM('<div>test</div>');
 			const element = dom.window.document.querySelector('div');
-			expect(element).toBeTruthy();
-			if (element && element.firstChild) {
-				expect(isTextNode(element.firstChild)).toBe(true);
-			}
+			expect(element).not.toBeNull();
+			expect(element!.firstChild).not.toBeNull();
+			expect(isTextNode(element!.firstChild!)).toBe(true);
 		});
 
 		test('should return false for element nodes', () => {
 			const dom = new JSDOM('<div>test</div>');
 			const element = dom.window.document.querySelector('div');
-			expect(element).toBeTruthy();
-			if (element) {
-				expect(isTextNode(element)).toBe(false);
-			}
+			expect(element).not.toBeNull();
+			expect(isTextNode(element)).toBe(false);
 		});
 	});
 
@@ -59,22 +50,17 @@ describe('Utils', () => {
 		test('should return true for comment nodes', () => {
 			const dom = new JSDOM('<div><!-- comment --></div>');
 			const element = dom.window.document.querySelector('div');
-			expect(element).toBeTruthy();
-			if (element) {
-				const comment = Array.from(element.childNodes).find(node => node.nodeType === 8);
-				if (comment) {
-					expect(isCommentNode(comment)).toBe(true);
-				}
-			}
+			expect(element).not.toBeNull();
+			const comment = Array.from(element!.childNodes).find(node => node.nodeType === 8);
+			expect(comment).toBeDefined();
+			expect(isCommentNode(comment!)).toBe(true);
 		});
 
 		test('should return false for element nodes', () => {
 			const dom = new JSDOM('<div>test</div>');
 			const element = dom.window.document.querySelector('div');
-			expect(element).toBeTruthy();
-			if (element) {
-				expect(isCommentNode(element)).toBe(false);
-			}
+			expect(element).not.toBeNull();
+			expect(isCommentNode(element)).toBe(false);
 		});
 	});
 
@@ -82,7 +68,7 @@ describe('Utils', () => {
 		test('should return window from defaultView', () => {
 			const dom = new JSDOM('<html></html>');
 			const window = getWindow(dom.window.document);
-			expect(window).toBeTruthy();
+			expect(window).not.toBeNull();
 			expect(window).toBe(dom.window);
 		});
 
@@ -100,11 +86,10 @@ describe('Utils', () => {
 		test('should return computed style for element', () => {
 			const dom = new JSDOM('<div style="color: red;">test</div>');
 			const element = dom.window.document.querySelector('div');
-			expect(element).toBeTruthy();
-			if (element) {
-				const style = getComputedStyle(element);
-				expect(style).toBeTruthy();
-			}
+			expect(element).not.toBeNull();
+			const style = getComputedStyle(element!);
+			expect(style).not.toBeNull();
+			expect(style!.color).toBeDefined();
 		});
 
 		test('should return null when window is not available', () => {

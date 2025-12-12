@@ -69,13 +69,15 @@ describe('GitHubExtractor', () => {
 			const doc = createTestDocument(html, 'https://github.com/user/repo/issues/1');
 			const extractor = new GitHubExtractor(doc, 'https://github.com/user/repo/issues/1');
 			
-			if (extractor.canExtract()) {
-				const result = extractor.extract();
-				expect(result.contentHtml).toBeTruthy();
-				expect(result.contentHtml).toContain('This is the issue body content');
-				expect(result.variables?.title).toBeTruthy();
-				expect(result.variables?.site).toContain('GitHub');
-			}
+			expect(extractor.canExtract()).toBe(true);
+			const result = extractor.extract();
+			expect(result.contentHtml).toContain('This is the issue body content');
+			expect(result.contentHtml).toContain('<strong>testuser</strong>');
+			expect(result.contentHtml).toContain('opened this issue on 1/15/2024');
+			expect(result.variables?.title).toBe('user/repo #1 - Issue Title');
+			expect(result.variables?.author).toBe('');
+			expect(result.variables?.published).toBeUndefined();
+			expect(result.variables?.site).toBe('GitHub - user/repo');
 		});
 
 		test('should extract issue number from URL', () => {
@@ -100,10 +102,9 @@ describe('GitHubExtractor', () => {
 			const doc = createTestDocument(html, 'https://github.com/user/repo/issues/42');
 			const extractor = new GitHubExtractor(doc, 'https://github.com/user/repo/issues/42');
 			
-			if (extractor.canExtract()) {
-				const result = extractor.extract();
-				expect(result.extractedContent?.issueNumber).toBe('42');
-			}
+			expect(extractor.canExtract()).toBe(true);
+			const result = extractor.extract();
+			expect(result.extractedContent?.issueNumber).toBe('42');
 		});
 
 		test('should extract repository info from URL', () => {
@@ -128,11 +129,10 @@ describe('GitHubExtractor', () => {
 			const doc = createTestDocument(html, 'https://github.com/owner/repo/issues/1');
 			const extractor = new GitHubExtractor(doc, 'https://github.com/owner/repo/issues/1');
 			
-			if (extractor.canExtract()) {
-				const result = extractor.extract();
-				expect(result.extractedContent?.owner).toBe('owner');
-				expect(result.extractedContent?.repository).toBe('repo');
-			}
+			expect(extractor.canExtract()).toBe(true);
+			const result = extractor.extract();
+			expect(result.extractedContent?.owner).toBe('owner');
+			expect(result.extractedContent?.repository).toBe('repo');
 		});
 
 		test('should extract comments', () => {
@@ -166,11 +166,11 @@ describe('GitHubExtractor', () => {
 			const doc = createTestDocument(html, 'https://github.com/user/repo/issues/1');
 			const extractor = new GitHubExtractor(doc, 'https://github.com/user/repo/issues/1');
 			
-			if (extractor.canExtract()) {
-				const result = extractor.extract();
-				expect(result.contentHtml).toContain('This is a comment');
-				expect(result.contentHtml).toContain('commenter');
-			}
+			expect(extractor.canExtract()).toBe(true);
+			const result = extractor.extract();
+			expect(result.contentHtml).toContain('Issue body');
+			expect(result.contentHtml).toContain('This is a comment');
+			expect(result.contentHtml).toContain('commenter');
 		});
 
 		test('should handle missing elements gracefully', () => {
@@ -190,10 +190,9 @@ describe('GitHubExtractor', () => {
 			const doc = createTestDocument(html, 'https://github.com/user/repo/issues/1');
 			const extractor = new GitHubExtractor(doc, 'https://github.com/user/repo/issues/1');
 			
-			if (extractor.canExtract()) {
-				// Should not throw
-				expect(() => extractor.extract()).not.toThrow();
-			}
+			expect(extractor.canExtract()).toBe(true);
+			// Should not throw
+			expect(() => extractor.extract()).not.toThrow();
 		});
 	});
 });

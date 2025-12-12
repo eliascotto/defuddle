@@ -23,9 +23,10 @@ describe('Defuddle', () => {
 			const defuddle = new Defuddle(doc);
 			const result = defuddle.parse();
 
-			expect(result.content).toBeTruthy();
+			expect(result.title).toBe('Test Article');
 			expect(result.content.length).toBeGreaterThan(0);
-			expect(result.title).toBeTruthy();
+			expect(result.content).toContain('Article Title');
+			expect(result.content).toContain('This is the article content');
 			expect(result.wordCount).toBeGreaterThan(0);
 		});
 
@@ -49,8 +50,9 @@ describe('Defuddle', () => {
 			const defuddle = new Defuddle(doc);
 			const result = defuddle.parse();
 
-			expect(result.title).toBeTruthy();
-			expect(result.description).toBeTruthy();
+			expect(result.title).toBe('Test Article');
+			expect(result.description).toBe('Article description');
+			expect(result.author).toBe('John Doe');
 		});
 
 		test('should calculate word count', () => {
@@ -87,12 +89,16 @@ describe('Defuddle', () => {
 				</body>
 				</html>
 			`;
-			const doc = createTestDocument(html);
+			const doc = createTestDocument(
+				'<!DOCTYPE html><html><head><title>Test</title></head><body><article><p data-test="value">Content</p></article></body></html>'
+			);
 			const defuddle = new Defuddle(doc, { debug: true });
 			const result = defuddle.parse();
 
-			expect(result).toBeTruthy();
-			// Debug mode should preserve more attributes
+			expect(result.title).toBe('Test');
+			expect(result.content).toContain('Content');
+			// Debug mode should preserve data-* attributes
+			expect(result.content).toContain('data-test="value"');
 		});
 
 		test('should remove images when removeImages is true', () => {
@@ -267,9 +273,9 @@ describe('Defuddle', () => {
 			const defuddle = new Defuddle(doc);
 			const result = defuddle.parse();
 
-			// Should still return a result even with small content
-			expect(result).toBeTruthy();
-			expect(result.content).toBeTruthy();
+			// Should still return content even with small wordCount
+			expect(result.content.length).toBeGreaterThan(0);
+			expect(result.wordCount).toBeGreaterThanOrEqual(0);
 		});
 	});
 
@@ -280,8 +286,9 @@ describe('Defuddle', () => {
 			const defuddle = new Defuddle(doc);
 			const result = defuddle.parse();
 
-			expect(result).toBeTruthy();
-			expect(result.content).toBeTruthy();
+			expect(result.title).toBe('');
+			expect(result.content).toBeTypeOf('string');
+			expect(result.wordCount).toBeGreaterThanOrEqual(0);
 		});
 
 		test('should handle document with no content', () => {
@@ -298,7 +305,10 @@ describe('Defuddle', () => {
 			const defuddle = new Defuddle(doc);
 			const result = defuddle.parse();
 
-			expect(result).toBeTruthy();
+			// Navigation-only pages are treated as clutter and removed.
+			expect(result.content).not.toContain('Navigation only');
+			expect(result.wordCount).toBe(0);
+			expect(result.wordCount).toBeGreaterThanOrEqual(0);
 		});
 
 		test('should handle malformed HTML gracefully', () => {
@@ -329,7 +339,10 @@ describe('Defuddle', () => {
 			const defuddle = new Defuddle(doc);
 			const result = defuddle.parse();
 
-			expect(result).toBeTruthy();
+			// Navigation-only pages are removed as clutter.
+			expect(result.content).not.toContain('Home');
+			expect(result.content).not.toContain('About');
+			expect(result.wordCount).toBe(0);
 		});
 
 		test('should handle errors gracefully', () => {
@@ -361,11 +374,13 @@ describe('Defuddle', () => {
 			const defuddle = new Defuddle(doc, { url: 'https://github.com/user/repo/issues/1' });
 			const result = defuddle.parse();
 
-			expect(result).toBeTruthy();
-			// If extractor is used, it should have extractorType
-			if (result.extractorType) {
-				expect(result.extractorType).toBe('github');
-			}
+			expect(result.extractorType).toBe('github');
+			expect(result.domain).toBe('github.com');
+			// This minimal fixture triggers the extractor but does not include the full issue container,
+			// so the extractor returns empty content.
+			expect(result.title).toBe('Test');
+			expect(result.site).toBe('github');
+			expect(result.content).toBe('');
 		});
 	});
 });

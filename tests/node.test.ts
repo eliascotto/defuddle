@@ -19,9 +19,11 @@ describe('Node.js Defuddle function', () => {
 			`;
 			const result = await Defuddle(html);
 
-			expect(result).toBeTruthy();
-			expect(result.content).toBeTruthy();
-			expect(result.title).toBeTruthy();
+			expect(result.title).toBe('Test Article');
+			expect(result.content).toContain('Article Title');
+			expect(result.content).toContain('This is the article content.');
+			expect(result.wordCount).toBeGreaterThan(0);
+			expect(result.parseTime).toBeGreaterThanOrEqual(0);
 		});
 
 		test('should parse HTML string with URL', async () => {
@@ -45,13 +47,16 @@ describe('Node.js Defuddle function', () => {
 				<html>
 				<head><title>Test</title></head>
 				<body>
-					<article><p>Content</p></article>
+					<article><p data-test="value">Content</p></article>
 				</body>
 				</html>
 			`;
 			const result = await Defuddle(html, 'https://example.com', { debug: true });
 
-			expect(result).toBeTruthy();
+			expect(result.domain).toBe('example.com');
+			expect(result.content).toContain('Content');
+			// Debug mode should preserve data-* attributes
+			expect(result.content).toContain('data-test="value"');
 		});
 	});
 
@@ -72,8 +77,10 @@ describe('Node.js Defuddle function', () => {
 			const dom = new JSDOM(html);
 			const result = await Defuddle(dom);
 
-			expect(result).toBeTruthy();
-			expect(result.content).toBeTruthy();
+			expect(result.title).toBe('Test Article');
+			expect(result.content).toContain('Article Title');
+			expect(result.content).toContain('Content');
+			expect(result.wordCount).toBeGreaterThan(0);
 		});
 
 		test('should use URL from JSDOM if not provided', async () => {
@@ -128,9 +135,11 @@ describe('Node.js Defuddle function', () => {
 			`;
 			const result = await Defuddle(html, 'https://example.com', { separateMarkdown: true });
 
-			expect(result.content).toBeTruthy();
-			expect(result.contentMarkdown).toBeTruthy();
-			expect(result.contentMarkdown).toContain('# Title');
+			expect(result.content).toContain('Title');
+			expect(result.contentMarkdown).toBeTypeOf('string');
+			expect(result.contentMarkdown?.length).toBeGreaterThan(0);
+			// Heading level may vary depending on standardization; ensure it's a heading
+			expect(result.contentMarkdown).toMatch(/(^|\n)#{1,6}\s+Title/);
 			expect(result.contentMarkdown).toContain('Content');
 		});
 	});
@@ -139,15 +148,19 @@ describe('Node.js Defuddle function', () => {
 		test('should handle malformed HTML gracefully', async () => {
 			const html = '<!DOCTYPE html><html><head><title>Test</title></head><body><p>Unclosed<div>Mixed</body></html>';
 			
-			// Should not throw
-			await expect(Defuddle(html)).resolves.toBeTruthy();
+			const result = await Defuddle(html);
+			expect(result.title).toBe('Test');
+			expect(result.content).toContain('Unclosed');
+			expect(result.content).toContain('Mixed');
 		});
 
 		test('should handle empty HTML', async () => {
 			const html = '<!DOCTYPE html><html><head><title></title></head><body></body></html>';
 			const result = await Defuddle(html);
 
-			expect(result).toBeTruthy();
+			expect(result.title).toBe('');
+			expect(result.content).toBeTypeOf('string');
+			expect(result.wordCount).toBeGreaterThanOrEqual(0);
 		});
 	});
 
@@ -172,8 +185,10 @@ describe('Node.js Defuddle function', () => {
 				removePartialSelectors: true
 			});
 
-			expect(result).toBeTruthy();
+			expect(result.domain).toBe('example.com');
+			expect(result.title).toBe('Test');
 			expect(result.content).not.toContain('<img');
+			expect(result.wordCount).toBeGreaterThan(0);
 		});
 	});
 });

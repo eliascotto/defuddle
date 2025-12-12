@@ -9,17 +9,14 @@ describe('Code Block Rules', () => {
 			const doc = createMinimalDocument(html);
 			const pre = doc.querySelector('pre');
 			
-			expect(pre).toBeTruthy();
-			if (pre) {
-				const rule = codeBlockRules[0];
-				if (rule.transform) {
-					const transformed = rule.transform(pre, doc);
-					const code = transformed.querySelector('code');
-					expect(code).toBeTruthy();
-					expect(code?.getAttribute('data-lang')).toBe('javascript');
-					expect(code?.className).toContain('language-javascript');
-				}
-			}
+			expect(pre).not.toBeNull();
+			const rule = codeBlockRules[0];
+			expect(rule.transform).toBeTypeOf('function');
+			const transformed = rule.transform!(pre!, doc);
+			const code = transformed.querySelector('code');
+			expect(code).not.toBeNull();
+			expect(code!.getAttribute('data-lang')).toBe('javascript');
+			expect(code!.className).toContain('language-javascript');
 		});
 
 		test('should detect language from class name', () => {
@@ -27,16 +24,14 @@ describe('Code Block Rules', () => {
 			const doc = createMinimalDocument(html);
 			const pre = doc.querySelector('pre');
 			
-			expect(pre).toBeTruthy();
-			if (pre) {
-				const rule = codeBlockRules[0];
-				if (rule.transform) {
-					const transformed = rule.transform(pre, doc);
-					const code = transformed.querySelector('code');
-					expect(code).toBeTruthy();
-					expect(code?.getAttribute('data-lang')).toBe('python');
-				}
-			}
+			expect(pre).not.toBeNull();
+			const rule = codeBlockRules[0];
+			expect(rule.transform).toBeTypeOf('function');
+			const transformed = rule.transform!(pre!, doc);
+			const code = transformed.querySelector('code');
+			expect(code).not.toBeNull();
+			expect(code!.getAttribute('data-lang')).toBe('python');
+			expect(code!.className).toContain('language-python');
 		});
 
 		test('should extract code from syntax highlighter', () => {
@@ -44,17 +39,15 @@ describe('Code Block Rules', () => {
 			const doc = createMinimalDocument(html);
 			const div = doc.querySelector('.syntaxhighlighter');
 			
-			expect(div).toBeTruthy();
-			if (div) {
-				const rule = codeBlockRules[0];
-				if (rule.transform) {
-					const transformed = rule.transform(div, doc);
-					expect(transformed.tagName.toLowerCase()).toBe('pre');
-					const code = transformed.querySelector('code');
-					expect(code).toBeTruthy();
-					expect(code?.textContent).toContain('console.log');
-				}
-			}
+			expect(div).not.toBeNull();
+			const rule = codeBlockRules[0];
+			expect(rule.transform).toBeTypeOf('function');
+			const transformed = rule.transform!(div!, doc);
+			expect(transformed.tagName.toLowerCase()).toBe('pre');
+			const code = transformed.querySelector('code');
+			expect(code).not.toBeNull();
+			expect(code!.textContent).toContain('console.log("test");');
+			expect(code!.getAttribute('data-lang')).toBe('javascript');
 		});
 
 		test('should preserve code content', () => {
@@ -62,16 +55,14 @@ describe('Code Block Rules', () => {
 			const doc = createMinimalDocument(html);
 			const pre = doc.querySelector('pre');
 			
-			expect(pre).toBeTruthy();
-			if (pre) {
-				const rule = codeBlockRules[0];
-				if (rule.transform) {
-					const transformed = rule.transform(pre, doc);
-					const code = transformed.querySelector('code');
-					expect(code).toBeTruthy();
-					expect(code?.textContent).toContain('function test');
-				}
-			}
+			expect(pre).not.toBeNull();
+			const rule = codeBlockRules[0];
+			expect(rule.transform).toBeTypeOf('function');
+			const transformed = rule.transform!(pre!, doc);
+			const code = transformed.querySelector('code');
+			expect(code).not.toBeNull();
+			expect(code!.textContent).toContain('function test()');
+			expect(code!.textContent).toContain('return true');
 		});
 	});
 });

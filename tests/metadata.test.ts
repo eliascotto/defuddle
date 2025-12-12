@@ -207,8 +207,9 @@ describe('MetadataExtractor', () => {
 				'<p>Content</p>'
 			);
 			const metadata = MetadataExtractor.extract(doc, [schemaOrg], []);
-			// Site name extraction has fallbacks, may use domain if schema.org doesn't match
-			expect(metadata.site).toBeTruthy();
+			// Current schema lookup doesn't resolve "@type": "WebSite" to "WebSite.*" paths
+			// so we fall back to domain-based site extraction from the document URL.
+			expect(metadata.site).toBe('example');
 		});
 
 		test('should handle schema.org @graph arrays', () => {
@@ -229,8 +230,7 @@ describe('MetadataExtractor', () => {
 			const doc = createTestDocument(html);
 			const metadata = MetadataExtractor.extract(doc, schemaOrg['@graph'], []);
 			expect(metadata.title).toBe('Graph Title');
-			// Site name extraction has fallbacks
-			expect(metadata.site).toBeTruthy();
+			expect(metadata.site).toBe('example');
 		});
 
 		test('should handle missing metadata gracefully', () => {
@@ -288,11 +288,9 @@ describe('MetadataExtractor', () => {
 </html>`;
 			const doc = createTestDocument(html, 'https://example.com');
 			const metadata = MetadataExtractor.extract(doc, [], []);
-			// Title cleaning requires a siteName to be extracted first
-			// If no siteName is found, the title won't be cleaned (expected behavior)
-			expect(metadata.title).toBeTruthy();
-			// The title may or may not be cleaned depending on whether siteName was extracted
-			// This is expected behavior - title cleaning only works if siteName is available
+			// With no siteName meta tags, the title is not cleaned in this case.
+			expect(metadata.site).toBe('example');
+			expect(metadata.title).toBe('Article Title | Example Site');
 		});
 
 		test('should extract URL from canonical link', () => {

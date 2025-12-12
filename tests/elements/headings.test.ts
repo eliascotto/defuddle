@@ -10,15 +10,12 @@ describe('Heading Rules', () => {
 			const doc = createMinimalDocument(html);
 			const heading = doc.querySelector('h2');
 			
-			expect(heading).toBeTruthy();
-			if (heading) {
-				const rule = headingRules[0];
-				if (rule.transform) {
-					const transformed = rule.transform(heading, doc);
-					expect(transformed.textContent).toBe('Heading Text');
-					expect(transformed.querySelector('a')).toBeNull();
-				}
-			}
+			expect(heading).not.toBeNull();
+			const rule = headingRules[0];
+			expect(rule.transform).toBeTypeOf('function');
+			const transformed = rule.transform!(heading!, doc);
+			expect(transformed.textContent).toBe('Heading Text');
+			expect(transformed.querySelector('a')).toBeNull();
 		});
 
 		test('should remove button elements from headings', () => {
@@ -26,14 +23,11 @@ describe('Heading Rules', () => {
 			const doc = createMinimalDocument(html);
 			const heading = doc.querySelector('h2');
 			
-			expect(heading).toBeTruthy();
-			if (heading) {
-				const rule = headingRules[0];
-				if (rule.transform) {
-					const transformed = rule.transform(heading, doc);
-					expect(transformed.querySelector('button')).toBeNull();
-				}
-			}
+			expect(heading).not.toBeNull();
+			const rule = headingRules[0];
+			expect(rule.transform).toBeTypeOf('function');
+			const transformed = rule.transform!(heading!, doc);
+			expect(transformed.querySelector('button')).toBeNull();
 		});
 
 		test('should preserve non-anchor links', () => {
@@ -41,15 +35,13 @@ describe('Heading Rules', () => {
 			const doc = createMinimalDocument(html);
 			const heading = doc.querySelector('h2');
 			
-			expect(heading).toBeTruthy();
-			if (heading) {
-				const rule = headingRules[0];
-				if (rule.transform) {
-					const transformed = rule.transform(heading, doc);
-					// External links might be preserved or removed depending on implementation
-					expect(transformed.textContent).toBeTruthy();
-				}
-			}
+			expect(heading).not.toBeNull();
+			const rule = headingRules[0];
+			expect(rule.transform).toBeTypeOf('function');
+			const transformed = rule.transform!(heading!, doc);
+			expect(transformed.textContent).toBe('External Link');
+			// Headings are simplified to plain text (links are removed regardless of target).
+			expect(transformed.querySelector('a')).toBeNull();
 		});
 	});
 });

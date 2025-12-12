@@ -59,7 +59,7 @@ describe('TwitterExtractor', () => {
 				<head><title>Twitter</title></head>
 				<body>
 					<article data-testid="tweet">
-						<div>Tweet content here</div>
+						<div data-testid="tweetText">Tweet content here</div>
 					</article>
 				</body>
 				</html>
@@ -67,11 +67,10 @@ describe('TwitterExtractor', () => {
 			const doc = createTestDocument(html, 'https://twitter.com/user/status/123');
 			const extractor = new TwitterExtractor(doc, 'https://twitter.com/user/status/123');
 			
-			if (extractor.canExtract()) {
-				const result = extractor.extract();
-				expect(result.contentHtml).toBeTruthy();
-				expect(result.variables?.site).toBe('X (Twitter)');
-			}
+			expect(extractor.canExtract()).toBe(true);
+			const result = extractor.extract();
+			expect(result.contentHtml).toContain('Tweet content here');
+			expect(result.variables?.site).toBe('X (Twitter)');
 		});
 
 		test('should extract thread tweets', () => {
@@ -82,13 +81,13 @@ describe('TwitterExtractor', () => {
 				<body>
 					<div aria-label="Timeline: Conversation">
 						<article data-testid="tweet">
-							<div>First tweet</div>
+							<div data-testid="tweetText">First tweet</div>
 						</article>
 						<article data-testid="tweet">
-							<div>Second tweet</div>
+							<div data-testid="tweetText">Second tweet</div>
 						</article>
 						<article data-testid="tweet">
-							<div>Third tweet</div>
+							<div data-testid="tweetText">Third tweet</div>
 						</article>
 					</div>
 				</body>
@@ -97,12 +96,12 @@ describe('TwitterExtractor', () => {
 			const doc = createTestDocument(html, 'https://twitter.com/user/status/123');
 			const extractor = new TwitterExtractor(doc, 'https://twitter.com/user/status/123');
 			
-			if (extractor.canExtract()) {
-				const result = extractor.extract();
-				// Twitter extractor may extract content differently, just verify it works
-				expect(result.contentHtml).toBeTruthy();
-				expect(result.variables).toBeTruthy();
-			}
+			expect(extractor.canExtract()).toBe(true);
+			const result = extractor.extract();
+			expect(result.contentHtml).toContain('First tweet');
+			expect(result.contentHtml).toContain('Second tweet');
+			expect(result.contentHtml).toContain('Third tweet');
+			expect(result.variables?.site).toBe('X (Twitter)');
 		});
 	});
 });
